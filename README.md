@@ -1,1 +1,1 @@
-"# LightingInLove2D" 
+# Lua/Löve2D Visibility Algorithm
