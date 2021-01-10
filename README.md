@@ -1,7 +1,11 @@
-# Lua/Löve2D Visibility Algorithm
+# Lua/Löve2D Lighting and Shadow Algorithm 💡
 
-![image info](./screenshots/first.png)
+This is my Lua implementation of a 2D lighting/visibility algorithm using the Löve2D Framework. The algorithm to calculate the lit area is based on [this video](https://youtu.be/fc3nnG2CG8U?list=LL) by the amazing **One Lone Coder**.
 
-This is my Lua implementation of a 2D visibility algorithm with the Löve2D Framework.
+The result looks something like this:
 
-The algorithm is based on [this video](https://youtu.be/fc3nnG2CG8U?list=LL) by **One Lone Coder**.
+![Screenshot of the demo](./screenshots/first.png)
+
+## Explanation:
+
+I am currently working on a write up of the whole thing. Stay tuned.
