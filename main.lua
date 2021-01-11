@@ -31,6 +31,9 @@ bgQuad = love.graphics.newQuad(0, 0, 800, 600, bgSource:getWidth(), bgSource:get
 
 box = love.graphics.newImage("assets/box.png")
 
+-- The canvas on which the lightmap will be drawn
+local lightmap = love.graphics.newCanvas()
+
 -- The "player" which is also our light source
 local player = {
     x = 400,
@@ -238,26 +241,26 @@ function love.mousereleased(mx, my, btn)
         newEdge.x2 = mx
         newEdge.y2 = my
         table.insert(edges, { x1=newEdge.x1, y1=newEdge.y1, x2=newEdge.x2, y2=newEdge.y2 })
+        calculateVisiblePolygon(player.x, player.y, 2000)
     end
 
 end
-
-local canvas = love.graphics.newCanvas()
 
 function love.draw()
 
     -- Draw background texture
     love.graphics.draw(bgSource, bgQuad, 0, 0)
 
-    love.graphics.setCanvas(canvas)
+    -- 
+    love.graphics.setCanvas(lightmap)
         love.graphics.clear()
 
-        -- draw darkness
+        -- Draw a black rectangle as the background
         love.graphics.setColor(0.1,0.1,0.1)
         love.graphics.rectangle("fill", 0, 0, 800, 600)
         love.graphics.setColor(1,1,1)
 
-        -- draw Polygon
+        -- Draw all the visible triangles with the "light" shader
         love.graphics.setShader(light)
             light:send("origin", { player.x, player.y })
             light:send("radius", 300)
@@ -271,7 +274,7 @@ function love.draw()
 
     -- Draw light
     love.graphics.setBlendMode("multiply", "premultiplied")
-    love.graphics.draw(canvas)
+        love.graphics.draw(lightmap)
     love.graphics.setBlendMode("alpha", "alphamultiply")
 
     -- Draw the player
@@ -284,15 +287,25 @@ function love.draw()
     love.graphics.setLineWidth(1)
     love.graphics.setLineStyle("rough")
 
+    -- Draw Box
+    -- @TODO: make the box a dynamic object
     love.graphics.draw(box, 500, 100)
 
-    -- for k, pt in ipairs(visiblePolygon) do
-    --     love.graphics.print(k, pt[2], pt[3])
+    -- Draw all the triangles of the visible area
+    -- for _, triangle in ipairs(aPolygon) do
+    --     love.graphics.polygon("line", triangle)
     -- end
 
     -- Draw all edges
     for k, edge in ipairs(edges) do
         love.graphics.line(edge.x1,edge.y1,edge.x2,edge.y2)
+    end
+
+    -- Draw wall placer helper
+    if newEdge.draw then
+        love.graphics.line(newEdge.x1, newEdge.y1, love.mouse.getX(), love.mouse.getY())
+        love.graphics.circle("fill", newEdge.x1, newEdge.y1, 5)
+        love.graphics.circle("fill", love.mouse.getX(), love.mouse.getY(), 5)
     end
 
     love.graphics.print("FPS: "..love.timer.getFPS(), 10, 10)
