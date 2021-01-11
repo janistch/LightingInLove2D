@@ -1,3 +1,7 @@
+-- The shader that creates a lightmap out of the visible triangles
+-- origin: the position the light source is at
+-- radius: the maximum distance of the light
+-- fallof: the distance from where the intensity of the light drops
 local light = love.graphics.newShader([[
 
     extern vec2 origin;
@@ -32,6 +36,7 @@ bgQuad = love.graphics.newQuad(0, 0, 800, 600, bgSource:getWidth(), bgSource:get
 box = love.graphics.newImage("assets/box.png")
 
 -- The canvas on which the lightmap will be drawn
+--love.graphics.setDefaultFilter("nearest", "nearest")
 local lightmap = love.graphics.newCanvas()
 
 -- The "player" which is also our light source
