@@ -4,7 +4,7 @@ This is my Lua implementation of a 2D lighting/visibility algorithm using the LÃ
 
 The result looks something like this:
 
-![Screenshot of the demo](./screenshots/first.png)
+![Screenshot of the demo](./screenshots/wide.png)
 
 ## Explanation:
 

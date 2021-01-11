@@ -275,9 +275,14 @@ function love.draw()
     love.graphics.setBlendMode("alpha", "alphamultiply")
 
     -- Draw the player
-    love.graphics.setColor(0,0.1,0.5)
-    love.graphics.circle("fill", player.x, player.y, 10, 5)
+    love.graphics.circle("fill", player.x, player.y, 10)
+    love.graphics.setColor(0,0,0)
+    love.graphics.setLineWidth(3)
+    love.graphics.setLineStyle("smooth")
+        love.graphics.circle("line", player.x, player.y, 10)
     love.graphics.setColor(1,1,1)
+    love.graphics.setLineWidth(1)
+    love.graphics.setLineStyle("rough")
 
     love.graphics.draw(box, 500, 100)
 
