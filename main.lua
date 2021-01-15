@@ -1,30 +1,32 @@
 -- The shader that creates a lightmap out of the visible triangles
 -- origin: the position the light source is at
 -- radius: the maximum distance of the light
--- fallof: the distance from where the intensity of the light drops
+-- falloff: the distance from where the intensity of the light drops
 local light = love.graphics.newShader([[
 
     extern vec2 origin;
     extern float radius;
-    extern float fallof;
+    extern float falloff;
+    extern vec3 clr;
 
     vec4 effect(vec4 color, Image texture, vec2 texture_coords, vec2 screen_coords)
     {
-        vec4 currentColor = Texel(texture, texture_coords);
+        float alpha = 1.0;
 
-        float dist = distance(origin, screen_coords);
+        float dist = distance(origin, screen_coords);   // Distance from the current pixel to the origin (player)
 
-        float safeFallof = fallof;
+        // The following makes sure you don't use a shorter radius than falloff
+        float safeFalloff= falloff;
 
-        if (fallof > radius) {
-            safeFallof = radius;
+        if (falloff > radius) {
+            safeFalloff = radius;
         }
 
-        if (dist > safeFallof) {
-            currentColor.a = (radius - dist)/(radius - safeFallof);
+        if (dist > safeFalloff) {
+            alpha = (radius - dist)/(radius - safeFalloff);
         }
 
-        return vec4(1, 0.87, 0.52, currentColor.a);
+        return vec4(clr.r, clr.g, clr.b, alpha);
     }
 
 ]])
@@ -32,8 +34,6 @@ local light = love.graphics.newShader([[
 bgSource = love.graphics.newImage("assets/tiles.png")
 bgSource:setWrap("repeat", "repeat")
 bgQuad = love.graphics.newQuad(0, 0, 800, 600, bgSource:getWidth(), bgSource:getHeight())
-
-box = love.graphics.newImage("assets/box.png")
 
 -- The canvas on which the lightmap will be drawn
 --love.graphics.setDefaultFilter("nearest", "nearest")
@@ -51,21 +51,12 @@ local newEdge = {
 
 -- All the edges of our world
 local edges = {
+
+    -- These are the borders of the level
     { x1 = 10, y1 = 10, x2 = 790, y2 = 10 },
     { x1 = 10, y1 = 590, x2 = 790, y2 = 590 },
     { x1 = 10, y1 = 10, x2 = 10, y2 = 590 },
-    { x1 = 790, y1 = 10, x2 = 790, y2 = 590 },
-
-    -- { x1 = 150, y1 = 200, x2 = 200, y2 = 100 },
-    -- { x1 = 200, y1 = 100, x2 = 250, y2 = 150 },
-    -- { x1 = 500, y1 = 350, x2 = 600, y2 = 250 },
-    -- { x1 = 300, y1 = 500, x2 = 460, y2 = 510 },
-    -- { x1 = 250, y1 = 420, x2 = 400, y2 = 420 },
-
-    { x1 = 500, y1 = 100, x2 = 564, y2 = 100 },
-    { x1 = 500, y1 = 164, x2 = 564, y2 = 164 },
-    { x1 = 500, y1 = 100, x2 = 500, y2 = 164 },
-    { x1 = 564, y1 = 100, x2 = 564, y2 = 164 },
+    { x1 = 790, y1 = 10, x2 = 790, y2 = 590 }
 }
 
 -- The polygon which represents the visible area
@@ -75,7 +66,8 @@ local aPolygon = {}
 -- The main attraction: this function calculates the visible area in form of a polygon
 function calculateVisiblePolygon(originX, originY, radius)
 
-    visiblePolygon = {}
+    local areaTable = {}
+    local triangles = {}
 
     -- Iterate over every edge
     for _, edge1 in ipairs(edges) do
@@ -142,7 +134,7 @@ function calculateVisiblePolygon(originX, originY, radius)
 
                 if valid then
                     local exists = false
-                    for _, pt in ipairs(visiblePolygon) do
+                    for _, pt in ipairs(areaTable) do
 
                         if min_px <= pt[2]+0.2 and min_px >= pt[2]-0.2 and
                            min_py <= pt[3]+0.2 and min_py >= pt[3]-0.2 then
@@ -154,7 +146,7 @@ function calculateVisiblePolygon(originX, originY, radius)
                     end
 
                     if not exists then
-                        table.insert(visiblePolygon, {min_ang, min_px, min_py})
+                        table.insert(areaTable, {min_ang, min_px, min_py})
                     end
                 end
 
@@ -165,13 +157,12 @@ function calculateVisiblePolygon(originX, originY, radius)
     end
 
     -- sort by angle
-    table.sort(visiblePolygon, function(a, b)
+    table.sort(areaTable, function(a, b)
         return a[1] < b[1]
     end)
 
     -- create actual Polygon
-    aPolygon = {}
-    triangle = {}
+    local triangle = {}
     count = 0
     done = false
 
@@ -179,30 +170,32 @@ function calculateVisiblePolygon(originX, originY, radius)
 
         count = count + 1
 
-        table.insert(triangle, visiblePolygon[count][2])
-        table.insert(triangle, visiblePolygon[count][3])
+        table.insert(triangle, areaTable[count][2])
+        table.insert(triangle, areaTable[count][3])
 
         if #triangle == 4 then
 
             table.insert(triangle, originX)
             table.insert(triangle, originY)
-            table.insert(aPolygon, triangle)
+            table.insert(triangles, triangle)
             triangle = {}
             count = count - 1
 
         end
 
-        if count >= #visiblePolygon then 
-            table.insert(triangle, visiblePolygon[1][2])
-            table.insert(triangle, visiblePolygon[1][3])
+        if count >= #areaTable then 
+            table.insert(triangle, areaTable[1][2])
+            table.insert(triangle, areaTable[1][3])
             table.insert(triangle, originX)
             table.insert(triangle, originY)
-            table.insert(aPolygon, triangle)
+            table.insert(triangles, triangle)
             triangle = {}
             done = true 
         end
 
     end
+
+    return triangles
 
 end
 
@@ -212,7 +205,7 @@ function love.load()
     love.window.setVSync(0)
     love.graphics.setLineStyle("rough")
 
-    calculateVisiblePolygon(player.x, player.y, 2000)
+    aPolygon = calculateVisiblePolygon(player.x, player.y, 2000)
 
 end
 
@@ -223,7 +216,7 @@ function love.update(dt)
         player.x = love.mouse.getX()
         player.y = love.mouse.getY()
 
-        calculateVisiblePolygon(player.x, player.y, 2000)
+        aPolygon = calculateVisiblePolygon(player.x, player.y, 2000)
 
     end
 
@@ -246,7 +239,7 @@ function love.mousereleased(mx, my, btn)
         newEdge.x2 = mx
         newEdge.y2 = my
         table.insert(edges, { x1=newEdge.x1, y1=newEdge.y1, x2=newEdge.x2, y2=newEdge.y2 })
-        calculateVisiblePolygon(player.x, player.y, 2000)
+        aPolygon = calculateVisiblePolygon(player.x, player.y, 2000)
     end
 
 end
@@ -269,7 +262,8 @@ function love.draw()
         love.graphics.setShader(light)
             light:send("origin", { player.x, player.y })
             light:send("radius", 300)
-            light:send("fallof", 20)
+            light:send("falloff", 20)
+            light:send("clr", { 1, 0.8, 0.2 })
             for _, triangle in ipairs(aPolygon) do
                 love.graphics.polygon("fill", triangle)
             end
@@ -291,10 +285,6 @@ function love.draw()
     love.graphics.setColor(1,1,1)
     love.graphics.setLineWidth(1)
     love.graphics.setLineStyle("rough")
-
-    -- Draw Box
-    -- @TODO: make the box a dynamic object
-    love.graphics.draw(box, 500, 100)
 
     -- Draw all the triangles of the visible area
     -- for _, triangle in ipairs(aPolygon) do

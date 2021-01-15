@@ -5,7 +5,3 @@ This is my Lua implementation of a 2D lighting/visibility algorithm using the LÃ
 The result looks something like this:
 
 ![Screenshot of the demo](./screenshots/demo.gif)
-
-## Explanation:
-
-*I'm working on it...*
